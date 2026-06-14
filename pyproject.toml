@@ -1,0 +1,33 @@
+[project]
+name = "my-webportfolio"
+version = "0.1.0"
+description = "Andre Cavota Computer Programming I web portfolio"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Andre Cavota", email = "cavotaanderson@gmail.com" }
+]
+dependencies = [
+    "flet>=0.85.2",
+    "flet-video==0.85.2"
+]
+
+[dependency-groups]
+dev = [
+    "flet-cli>=0.85.2",
+    "flet-desktop>=0.85.2",
+    "flet-web>=0.85.2",
+]
+
+[tool.flet]
+org = "com.andrecavota"
+product = "Andre Cavota Web Portfolio"
+company = "Andre Cavota"
+copyright = "Copyright (C) 2026 by Andre Cavota"
+
+[tool.flet.app]
+path = "src"
+module = "main"
+
+[tool.flet.web]
+route_url_strategy = "hash"
