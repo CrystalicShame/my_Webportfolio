@@ -32,6 +32,9 @@ BORDER      = "#1E3A5F"
 RED         = "#EF4444"
 TEAL        = "#10B981"
 ORANGE      = "#F97316"
+DEFAULT_VIEWPORT_WIDTH = 1280
+MOBILE_BREAKPOINT = 720
+NARROW_BREAKPOINT = 960
 
 NAV_LABELS  = ["Home", "Timeline", "MATLAB", "Blog", "GitHub"]
 NAV_ICONS   = [
@@ -167,6 +170,23 @@ def portfolio_scrollbar_theme() -> ft.ScrollbarTheme:
         min_thumb_length=68,
         interactive=False,
     )
+
+
+def current_view_width(viewport_width: float | int | None) -> float:
+    try:
+        width = float(viewport_width or DEFAULT_VIEWPORT_WIDTH)
+    except (TypeError, ValueError):
+        width = DEFAULT_VIEWPORT_WIDTH
+    return max(320, width)
+
+
+def available_width(
+    viewport_width: float | int | None,
+    max_width: int,
+    side_padding: int = 24,
+    min_width: int = 280,
+) -> float:
+    return max(min_width, min(max_width, current_view_width(viewport_width) - side_padding))
 
 
 def build_home_legacy() -> ft.Column:
@@ -710,7 +730,14 @@ def build_matlab_legacy() -> ft.Column:
         scroll=hidden_scroll(),
         expand=True,
     )
-def build_matlab() -> ft.Column:
+def build_matlab(viewport_width: float | int | None = None) -> ft.Column:
+    view_width = current_view_width(viewport_width)
+    is_mobile = view_width < MOBILE_BREAKPOINT
+    content_width = available_width(view_width, 1280, 28 if is_mobile else 72)
+    path_card_width = min(628, content_width)
+    course_card_width = min(410, content_width)
+    metric_width = 180 if content_width >= 780 else max(132, (content_width - 18) / 2)
+
     def line_border(color: str = BORDER, opacity: float = 0.74) -> ft.Border:
         side = ft.BorderSide(1, ft.Colors.with_opacity(opacity, color))
         return ft.Border(left=side, top=side, right=side, bottom=side)
@@ -779,17 +806,17 @@ def build_matlab() -> ft.Column:
 
     def metric_card(value: str, label: str, sublabel: str, width: int) -> ft.Container:
         return ft.Container(
-            width=width,
+            width=min(width, metric_width),
             height=62,
             border_radius=10,
             bgcolor="#10223B",
             border=line_border(ACCENT, 0.44),
-            padding=ft.Padding(20, 0, 18, 0),
+            padding=ft.Padding(14 if is_mobile else 20, 0, 12 if is_mobile else 18, 0),
             content=ft.Row(
                 controls=[
                     ft.Text(
                         value,
-                        size=28,
+                        size=24 if is_mobile else 28,
                         color="#4BA3FF",
                         weight=ft.FontWeight.BOLD,
                         font_family="Courier New",
@@ -887,8 +914,8 @@ def build_matlab() -> ft.Column:
         icon: str | None,
     ) -> ft.Container:
         return ft.Container(
-            width=628,
-            height=386,
+            width=path_card_width,
+            height=430 if is_mobile else 386,
             border_radius=14,
             bgcolor="#0F172A",
             border=line_border(ACCENT, 0.62),
@@ -968,10 +995,10 @@ def build_matlab() -> ft.Column:
                                                     border_radius=3,
                                                     bgcolor="#4BA3FF",
                                                 ),
-                                                ft.Text(item, size=12, color=TEXT_SECONDARY),
+                                                ft.Text(item, size=12, color=TEXT_SECONDARY, expand=True),
                                             ],
                                             spacing=8,
-                                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                                            vertical_alignment=ft.CrossAxisAlignment.START,
                                         )
                                         for item in bullets
                                     ],
@@ -999,7 +1026,7 @@ def build_matlab() -> ft.Column:
         tag: str = "COURSE",
     ) -> ft.Container:
         return ft.Container(
-            width=410,
+            width=course_card_width,
             height=292,
             border_radius=14,
             bgcolor="#0F172A",
@@ -1110,27 +1137,33 @@ def build_matlab() -> ft.Column:
                 controls=[
                     ft.Text(
                         "MATLAB",
-                        size=50,
+                        size=38 if is_mobile else 50,
                         color=TEXT_PRIMARY,
                         weight=ft.FontWeight.BOLD,
                     ),
                     ft.Text(
                         "Certifications",
-                        size=50,
+                        size=38 if is_mobile else 50,
                         color="#4BA3FF",
                         weight=ft.FontWeight.BOLD,
                     ),
                 ],
                 spacing=12,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                wrap=True,
             ),
             ft.Text(
-                "A verified record of completed MathWorks training - covering core\n"
-                "programming, data visualization, matrix operations, and Simulink\n"
-                "simulation.",
+                (
+                    "A verified record of completed MathWorks training - covering core programming, data visualization, matrix operations, and Simulink simulation."
+                    if is_mobile
+                    else "A verified record of completed MathWorks training - covering core\n"
+                    "programming, data visualization, matrix operations, and Simulink\n"
+                    "simulation."
+                ),
                 size=15,
                 color=TEXT_SECONDARY,
                 height=1.55,
+                width=content_width if is_mobile else None,
             ),
             ft.Container(height=16),
             ft.Row(
@@ -1142,6 +1175,7 @@ def build_matlab() -> ft.Column:
                 ],
                 spacing=24,
                 wrap=True,
+                alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
             ),
         ],
         spacing=14,
@@ -1149,7 +1183,7 @@ def build_matlab() -> ft.Column:
     )
 
     content = ft.Container(
-        width=1280,
+        width=content_width,
         content=ft.Column(
             controls=[
                 hero,
@@ -1186,6 +1220,7 @@ def build_matlab() -> ft.Column:
                     spacing=24,
                     run_spacing=24,
                     wrap=True,
+                    alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
                 ),
                 ft.Container(height=34),
                 section_label("Individual Courses"),
@@ -1232,6 +1267,7 @@ def build_matlab() -> ft.Column:
                     spacing=24,
                     run_spacing=24,
                     wrap=True,
+                    alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
                 ),
             ],
             spacing=28,
@@ -1251,9 +1287,9 @@ def build_matlab() -> ft.Column:
                 ),
                 content=ft.Stack(
                     controls=[
-                        *grid_background(height=2200),
+                        *grid_background(width=int(content_width + 80), height=2200),
                         ft.Container(
-                            padding=ft.Padding(0, 72, 0, 60),
+                            padding=ft.Padding(0, 34 if is_mobile else 72, 0, 44 if is_mobile else 60),
                             content=ft.Row(
                                 controls=[content],
                                 alignment=ft.MainAxisAlignment.CENTER,
@@ -1380,7 +1416,12 @@ def build_blog_legacy() -> ft.Column:
     )
 
 
-def build_blog() -> ft.Column:
+def build_blog(viewport_width: float | int | None = None) -> ft.Column:
+    view_width = current_view_width(viewport_width)
+    is_mobile = view_width < MOBILE_BREAKPOINT
+    content_width = available_width(view_width, 860, 24 if is_mobile else 72)
+    horizontal_pad = 14 if is_mobile else 32
+    post_pad = 16 if is_mobile else 36
     blog_bg = "#0A0F2E"
     blog_mid = "#0D1A4A"
     blog_gold = "#C9A84C"
@@ -1754,7 +1795,7 @@ export const startFallDetection = () => {
         return ft.Container(
             content=ft.Text(
                 text,
-                size=12,
+                size=10 if is_mobile else 12,
                 color=blog_gold_light,
                 font_family="Courier New",
                 selectable=True,
@@ -1772,7 +1813,7 @@ export const startFallDetection = () => {
 
     def condition_card(label: str, value: str, description: str) -> ft.Container:
         return ft.Container(
-            width=354,
+            width=min(354, content_width - (post_pad * 2)),
             content=ft.Column(
                 controls=[
                     ft.Text(
@@ -1919,7 +1960,7 @@ export const startFallDetection = () => {
             )
 
         return ft.Container(
-            padding=ft.Padding(0, 34, 0, 38),
+            padding=ft.Padding(0, 24 if is_mobile else 34, 0, 30 if is_mobile else 38),
             border=ft.Border(bottom=ft.BorderSide(1, blog_line)),
             content=ft.Column(
                 controls=[
@@ -1933,7 +1974,7 @@ export const startFallDetection = () => {
                     ),
                     ft.Text(
                         "Video Contribution",
-                        size=26,
+                        size=24 if is_mobile else 26,
                         weight=ft.FontWeight.BOLD,
                         color=blog_white,
                         font_family="Georgia",
@@ -1946,7 +1987,7 @@ export const startFallDetection = () => {
                         height=1.6,
                     ),
                     ft.Container(
-                        height=420,
+                        height=220 if is_mobile else 420,
                         clip_behavior=ft.ClipBehavior.HARD_EDGE,
                         border_radius=12,
                         bgcolor="#050817",
@@ -2020,7 +2061,7 @@ export const startFallDetection = () => {
         return ft.Container(
             visible=False,
             margin=ft.Margin(0, 8, 0, 0),
-            padding=ft.Padding(28, 24, 28, 24),
+            padding=ft.Padding(16, 16, 16, 16) if is_mobile else ft.Padding(28, 24, 28, 24),
             bgcolor=ft.Colors.with_opacity(0.50, blog_mid),
             border_radius=12,
             border=ft.Border(
@@ -2110,7 +2151,7 @@ export const startFallDetection = () => {
                     ],
                     spacing=14,
                 ),
-                padding=ft.Padding(0, 36, 0, 36),
+                padding=ft.Padding(0, post_pad, 0, post_pad),
                 border=(
                     ft.Border(
                         bottom=ft.BorderSide(
@@ -2128,7 +2169,7 @@ export const startFallDetection = () => {
         alignment=ft.Alignment(0, 0),
         padding=ft.Padding(0, 28, 0, 50),
         content=ft.Container(
-            width=360,
+            width=min(360, content_width),
             padding=ft.Padding(0, 28, 0, 0),
             border=ft.Border(top=ft.BorderSide(1, blog_line)),
             content=ft.Column(
@@ -2153,8 +2194,8 @@ export const startFallDetection = () => {
     )
 
     content = ft.Container(
-        width=860,
-        padding=ft.Padding(32, 0, 32, 0),
+        width=content_width,
+        padding=ft.Padding(horizontal_pad, 0, horizontal_pad, 0),
         content=ft.Column(
             controls=[
                 ft.Container(
@@ -2164,7 +2205,7 @@ export const startFallDetection = () => {
                         controls=[
                             ft.Text(
                                 "Technical Blog",
-                                size=42,
+                                size=34 if is_mobile else 42,
                                 weight=ft.FontWeight.BOLD,
                                 color=blog_white,
                                 font_family="Georgia",
@@ -2361,7 +2402,11 @@ def build_github_legacy() -> ft.Column:
     )
 
 
-def build_github() -> ft.Column:
+def build_github(viewport_width: float | int | None = None) -> ft.Column:
+    view_width = current_view_width(viewport_width)
+    is_mobile = view_width < MOBILE_BREAKPOINT
+    content_width = available_width(view_width, 900, 32 if is_mobile else 72)
+
     commits = [
         (
             "a3f2d1",
@@ -2455,7 +2500,7 @@ def build_github() -> ft.Column:
     def evidence_card(title: str, icon: str, controls: list[ft.Control]) -> ft.Container:
         return ft.Container(
             col={"xs": 12, "md": 6},
-            padding=24,
+            padding=18 if is_mobile else 24,
             border_radius=12,
             bgcolor=GH_CARD,
             border=soft_border(),
@@ -2601,12 +2646,12 @@ def build_github() -> ft.Column:
             ft.Container(
                 expand=True,
                 bgcolor=GH_BG,
-                padding=ft.Padding(24, 54, 24, 52),
+                padding=ft.Padding(16 if is_mobile else 24, 34 if is_mobile else 54, 16 if is_mobile else 24, 42 if is_mobile else 52),
                 alignment=ft.Alignment(0, -1),
                 content=ft.Column(
                     controls=[
                         ft.Container(
-                            width=900,
+                            width=content_width,
                             content=ft.Column(
                                 controls=[
                                     ft.Container(
@@ -2626,7 +2671,7 @@ def build_github() -> ft.Column:
                                             ft.TextSpan("Andre "),
                                             ft.TextSpan("Cavota", style=ft.TextStyle(color=GH_GOLD)),
                                         ],
-                                        size=58,
+                                        size=42 if is_mobile else 58,
                                         weight=ft.FontWeight.BOLD,
                                         color=GH_TEXT,
                                         font_family="Georgia",
@@ -2637,7 +2682,7 @@ def build_github() -> ft.Column:
                                         size=16,
                                         color=GH_MUTED,
                                         text_align=ft.TextAlign.CENTER,
-                                        width=600,
+                                        width=min(600, content_width),
                                         height=28,
                                     ),
                                     ft.Container(
@@ -2660,7 +2705,7 @@ def build_github() -> ft.Column:
                             ),
                         ),
                         ft.ResponsiveRow(
-                            width=700,
+                            width=min(700, content_width),
                             columns=12,
                             controls=[
                                 stat("3", "Phases"),
@@ -2674,7 +2719,7 @@ def build_github() -> ft.Column:
                         ),
                         ft.Divider(height=44, color=GH_LINE),
                         ft.Container(
-                            width=900,
+                            width=content_width,
                             content=ft.Column(
                                 controls=[
                                     ft.Text(
@@ -2690,7 +2735,7 @@ def build_github() -> ft.Column:
                                         size=14,
                                         color=GH_MUTED,
                                         text_align=ft.TextAlign.CENTER,
-                                        width=560,
+                                        width=min(560, content_width),
                                         height=48,
                                     ),
                                 ],
@@ -2699,7 +2744,7 @@ def build_github() -> ft.Column:
                             ),
                         ),
                         ft.ResponsiveRow(
-                            width=900,
+                            width=content_width,
                             columns=12,
                             controls=[
                                 evidence_card(
@@ -2717,7 +2762,7 @@ def build_github() -> ft.Column:
                             run_spacing=20,
                         ),
                         ft.Container(
-                            width=900,
+                            width=content_width,
                             content=ft.Column(
                                 controls=[
                                     ft.Divider(height=34, color=GH_LINE),
@@ -3300,7 +3345,15 @@ def main_legacy(page: ft.Page) -> None:
     page.add(content_area)
 
 
-def build_home() -> ft.Column:
+def build_home(viewport_width: float | int | None = None) -> ft.Column:
+    view_width = current_view_width(viewport_width)
+    is_mobile = view_width < MOBILE_BREAKPOINT
+    show_visual = view_width >= 1240
+    hero_title_size = 36 if is_mobile else 48
+    profile_width = None if is_mobile else 680
+    profile_avatar_frame = 86 if is_mobile else 104
+    profile_avatar = profile_avatar_frame - 8
+
     def border(color: str = BORDER, opacity: float = 0.62) -> ft.Border:
         side = ft.BorderSide(1, ft.Colors.with_opacity(opacity, color))
         return ft.Border(left=side, top=side, right=side, bottom=side)
@@ -3397,172 +3450,232 @@ def build_home() -> ft.Column:
         ),
     )
 
+    profile_picture = ft.Container(
+        width=profile_avatar_frame,
+        height=profile_avatar_frame,
+        border_radius=profile_avatar_frame / 2,
+        padding=4,
+        bgcolor="#0B1F35",
+        border=border(ACCENT, 0.85),
+        content=ft.Container(
+            width=profile_avatar,
+            height=profile_avatar,
+            border_radius=profile_avatar / 2,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            content=ft.Image(
+                src="profile_picture.jpg",
+                width=profile_avatar,
+                height=profile_avatar,
+                fit="cover",
+            ),
+        ),
+    )
+
+    intro_chips = ft.Row(
+        controls=[
+            ft.Container(
+                width=118,
+                height=34,
+                border_radius=18,
+                padding=ft.Padding(14, 0, 12, 0),
+                bgcolor="#1B2636",
+                border=border(TEXT_PRIMARY, 0.10),
+                content=ft.Row(
+                    controls=[
+                        ft.Text(
+                            "Welcome",
+                            size=13,
+                            color=ACCENT,
+                            weight=ft.FontWeight.BOLD,
+                        ),
+                        ft.Icon(ft.Icons.WAVING_HAND_ROUNDED, size=14, color=GOLD),
+                    ],
+                    spacing=6,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+            ),
+            ft.Container(
+                width=154,
+                height=30,
+                border_radius=16,
+                padding=ft.Padding(12, 0, 12, 0),
+                bgcolor=ft.Colors.with_opacity(0.12, TEAL),
+                content=ft.Row(
+                    controls=[
+                        ft.Icon(ft.Icons.VERIFIED_ROUNDED, color=TEAL, size=15),
+                        ft.Text(
+                            "Student Developer",
+                            size=12,
+                            color=TEAL,
+                            weight=ft.FontWeight.BOLD,
+                        ),
+                    ],
+                    spacing=6,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+            ),
+        ],
+        spacing=10,
+        run_spacing=8,
+        wrap=True,
+        alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
+    )
+
+    skill_badges = ft.Row(
+        controls=[
+            badge("Python"),
+            badge("MATLAB", GOLD),
+            badge("MineShield", TEAL),
+            badge("Typing Proficiency", ORANGE),
+        ],
+        spacing=8,
+        run_spacing=8,
+        wrap=True,
+        alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
+    )
+
+    profile_copy = ft.Column(
+        controls=[
+            intro_chips,
+            ft.Text(
+                "Andre Cavota",
+                size=25 if is_mobile else 26,
+                weight=ft.FontWeight.BOLD,
+                color=TEXT_PRIMARY,
+                text_align=ft.TextAlign.CENTER if is_mobile else ft.TextAlign.LEFT,
+            ),
+            ft.Text(
+                "Computer Programming I - Semester 1, 2026",
+                size=12 if is_mobile else 13,
+                color=TEXT_SECONDARY,
+                text_align=ft.TextAlign.CENTER if is_mobile else ft.TextAlign.LEFT,
+            ),
+            ft.Text(
+                "Building practical web, MATLAB, and engineering app projects with a focus on clean UI and useful problem solving.",
+                size=12 if is_mobile else 13,
+                color=TEXT_SECONDARY,
+                text_align=ft.TextAlign.CENTER if is_mobile else ft.TextAlign.LEFT,
+            ),
+            skill_badges,
+        ],
+        spacing=7,
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=(
+            ft.CrossAxisAlignment.CENTER if is_mobile else ft.CrossAxisAlignment.START
+        ),
+        expand=not is_mobile,
+    )
+
+    profile_card = ft.Container(
+        width=profile_width,
+        border_radius=14,
+        padding=ft.Padding(14 if is_mobile else 16, 14, 14 if is_mobile else 16, 14),
+        bgcolor="#081A2C",
+        border=border(BORDER, 0.72),
+        content=(
+            ft.Column(
+                controls=[profile_picture, profile_copy],
+                spacing=14,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            )
+            if is_mobile
+            else ft.Row(
+                controls=[profile_picture, profile_copy],
+                spacing=18,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            )
+        ),
+    )
+
+    hero_heading = (
+        ft.Column(
+            controls=[
+                ft.Text(
+                    "Welcome to My",
+                    size=hero_title_size,
+                    weight=ft.FontWeight.BOLD,
+                    color=TEXT_PRIMARY,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                ft.Text(
+                    "Web Portfolio",
+                    size=hero_title_size,
+                    weight=ft.FontWeight.BOLD,
+                    color=ACCENT,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+            ],
+            spacing=0,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        if is_mobile
+        else ft.Row(
+            controls=[
+                ft.Text(
+                    "Welcome to My",
+                    size=hero_title_size,
+                    weight=ft.FontWeight.BOLD,
+                    color=TEXT_PRIMARY,
+                ),
+                ft.Text(
+                    "Web Portfolio",
+                    size=hero_title_size,
+                    weight=ft.FontWeight.BOLD,
+                    color=ACCENT,
+                ),
+            ],
+            spacing=12,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+    )
+
+    hero_copy = ft.Container(
+        width=None if (is_mobile or not show_visual) else 760,
+        expand=not show_visual and not is_mobile,
+        content=ft.Column(
+            controls=[
+                profile_card,
+                hero_heading,
+                ft.Text(
+                    "Showcasing my technical achievements, learning journey, and contributions across multiple platforms.",
+                    size=14 if is_mobile else 16,
+                    color=TEXT_SECONDARY,
+                    height=1.5,
+                    text_align=ft.TextAlign.CENTER if is_mobile else ft.TextAlign.LEFT,
+                ),
+                ft.Row(
+                    controls=[
+                        ft.Container(width=48, height=2, bgcolor=ACCENT),
+                        ft.Container(expand=True, height=2, bgcolor="#193456"),
+                    ],
+                    spacing=0,
+                ),
+            ],
+            spacing=14 if is_mobile else 16,
+            horizontal_alignment=(
+                ft.CrossAxisAlignment.CENTER if is_mobile else ft.CrossAxisAlignment.START
+            ),
+        ),
+    )
+
     hero = ft.Container(
-        height=430,
+        height=None if is_mobile else 430,
         border_radius=10,
-        padding=ft.Padding(34, 32, 34, 32),
+        padding=ft.Padding(18 if is_mobile else 34, 22 if is_mobile else 32, 18 if is_mobile else 34, 22 if is_mobile else 32),
         gradient=ft.LinearGradient(
             begin=ft.Alignment(-1, -1),
             end=ft.Alignment(1, 1),
             colors=["#07111F", "#0B1423", "#071A31"],
         ),
         border=border(BORDER, 0.72),
-        content=ft.Row(
-            controls=[
-                ft.Container(
-                    width=760,
-                    content=ft.Column(
-                        controls=[
-                            ft.Container(
-                                width=680,
-                                border_radius=14,
-                                padding=ft.Padding(16, 14, 16, 14),
-                                bgcolor="#081A2C",
-                                border=border(BORDER, 0.72),
-                                content=ft.Row(
-                                    controls=[
-                                        ft.Container(
-                                            width=104,
-                                            height=104,
-                                            border_radius=52,
-                                            padding=4,
-                                            bgcolor="#0B1F35",
-                                            border=border(ACCENT, 0.85),
-                                            content=ft.Container(
-                                                width=96,
-                                                height=96,
-                                                border_radius=48,
-                                                clip_behavior=ft.ClipBehavior.HARD_EDGE,
-                                                content=ft.Image(
-                                                    src="profile_picture.jpg",
-                                                    width=96,
-                                                    height=96,
-                                                    fit="cover",
-                                                ),
-                                            ),
-                                        ),
-                                        ft.Column(
-                                            controls=[
-                                                ft.Row(
-                                                    controls=[
-                                                        ft.Container(
-                                                            width=118,
-                                                            height=34,
-                                                            border_radius=18,
-                                                            padding=ft.Padding(14, 0, 12, 0),
-                                                            bgcolor="#1B2636",
-                                                            border=border(TEXT_PRIMARY, 0.10),
-                                                            content=ft.Row(
-                                                                controls=[
-                                                                    ft.Text(
-                                                                        "Welcome",
-                                                                        size=13,
-                                                                        color=ACCENT,
-                                                                        weight=ft.FontWeight.BOLD,
-                                                                    ),
-                                                                    ft.Icon(ft.Icons.WAVING_HAND_ROUNDED, size=14, color=GOLD),
-                                                                ],
-                                                                spacing=6,
-                                                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                                                            ),
-                                                        ),
-                                                        ft.Container(
-                                                            width=154,
-                                                            height=30,
-                                                            border_radius=16,
-                                                            padding=ft.Padding(12, 0, 12, 0),
-                                                            bgcolor=ft.Colors.with_opacity(0.12, TEAL),
-                                                            content=ft.Row(
-                                                                controls=[
-                                                                    ft.Icon(ft.Icons.VERIFIED_ROUNDED, color=TEAL, size=15),
-                                                                    ft.Text("Student Developer", size=12, color=TEAL, weight=ft.FontWeight.BOLD),
-                                                                ],
-                                                                spacing=6,
-                                                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                                                            ),
-                                                        ),
-                                                    ],
-                                                    spacing=10,
-                                                    wrap=True,
-                                                ),
-                                                ft.Text(
-                                                    "Andre Cavota",
-                                                    size=26,
-                                                    weight=ft.FontWeight.BOLD,
-                                                    color=TEXT_PRIMARY,
-                                                ),
-                                                ft.Text(
-                                                    "Computer Programming I - Semester 1, 2026",
-                                                    size=13,
-                                                    color=TEXT_SECONDARY,
-                                                ),
-                                                ft.Text(
-                                                    "Building practical web, MATLAB, and engineering app projects with a focus on clean UI and useful problem solving.",
-                                                    size=13,
-                                                    color=TEXT_SECONDARY,
-                                                    width=500,
-                                                ),
-                                                ft.Row(
-                                                    controls=[
-                                                        badge("Python"),
-                                                        badge("MATLAB", GOLD),
-                                                        badge("MineShield", TEAL),
-                                                        badge("Typing Proficiency", ORANGE),
-                                                    ],
-                                                    spacing=8,
-                                                    run_spacing=8,
-                                                    wrap=True,
-                                                ),
-                                            ],
-                                            spacing=7,
-                                            alignment=ft.MainAxisAlignment.CENTER,
-                                            expand=True,
-                                        ),
-                                    ],
-                                    spacing=18,
-                                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                                ),
-                            ),
-                            ft.Row(
-                                controls=[
-                                    ft.Text(
-                                        "Welcome to My",
-                                        size=48,
-                                        weight=ft.FontWeight.BOLD,
-                                        color=TEXT_PRIMARY,
-                                    ),
-                                    ft.Text(
-                                        "Web Portfolio",
-                                        size=48,
-                                        weight=ft.FontWeight.BOLD,
-                                        color=ACCENT,
-                                    ),
-                                ],
-                                spacing=12,
-                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                            ),
-                            ft.Text(
-                                "Showcasing my technical achievements, learning journey,\n"
-                                "and contributions across multiple platforms.",
-                                size=16,
-                                color=TEXT_SECONDARY,
-                                height=1.5,
-                            ),
-                            ft.Row(
-                                controls=[
-                                    ft.Container(width=48, height=2, bgcolor=ACCENT),
-                                    ft.Container(expand=True, height=2, bgcolor="#193456"),
-                                ],
-                                spacing=0,
-                            ),
-                        ],
-                        spacing=16,
-                    ),
-                ),
-                visual,
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        content=(
+            hero_copy
+            if is_mobile
+            else ft.Row(
+                controls=[hero_copy, *([visual] if show_visual else [])],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            )
         ),
     )
 
@@ -3612,7 +3725,7 @@ def build_home() -> ft.Column:
                 ),
             )
         feature = ft.Container(
-            width=209,
+            width=max(240, min(320, view_width - 88)) if is_mobile else 209,
             height=187,
             border_radius=11,
             padding=ft.Padding(20, 17, 20, 17),
@@ -3719,13 +3832,14 @@ def build_home() -> ft.Column:
                 spacing=14,
                 run_spacing=14,
                 wrap=True,
+                alignment=ft.MainAxisAlignment.CENTER if is_mobile else ft.MainAxisAlignment.START,
             ),
             ft.Container(height=1, bgcolor=ft.Colors.with_opacity(0.85, BORDER)),
         ],
         spacing=22,
     )
     featured_sections = ft.Container(
-        padding=ft.Padding(34, 0, 34, 0),
+        padding=ft.Padding(4 if is_mobile else 34, 0, 4 if is_mobile else 34, 0),
         content=featured_sections,
     )
 
@@ -3737,7 +3851,13 @@ def build_home() -> ft.Column:
     )
 
 
-def build_timeline() -> ft.Column:
+def build_timeline(viewport_width: float | int | None = None) -> ft.Column:
+    view_width = current_view_width(viewport_width)
+    is_mobile = view_width < MOBILE_BREAKPOINT
+    linear_timeline = view_width < NARROW_BREAKPOINT
+    content_width = available_width(view_width, 900, 28 if linear_timeline else 64)
+    timeline_card_width = min(386, content_width - (54 if linear_timeline else 0))
+    timeline_text_width = max(220, timeline_card_width - 48)
     navy_deep = "#0A0F2E"
     navy_light = "#162260"
     navy_accent = "#1E3A8A"
@@ -3957,7 +4077,7 @@ def build_timeline() -> ft.Column:
 
     def stat_card(value: str, label: str) -> ft.Container:
         return ft.Container(
-            width=138,
+            width=138 if not is_mobile else max(126, min(152, (content_width - 24) / 2)),
             height=82,
             content=ft.Column(
                 controls=[
@@ -3983,8 +4103,8 @@ def build_timeline() -> ft.Column:
 
     def section_header() -> ft.Container:
         return ft.Container(
-            width=900,
-            padding=ft.Padding(0, 34, 0, 18),
+            width=content_width,
+            padding=ft.Padding(0, 20 if is_mobile else 34, 0, 18),
             content=ft.Column(
                 controls=[
                     ft.Text(
@@ -3995,7 +4115,7 @@ def build_timeline() -> ft.Column:
                     ),
                     ft.Text(
                         "Project Timeline",
-                        size=36,
+                        size=30 if is_mobile else 36,
                         color=white,
                         weight=ft.FontWeight.BOLD,
                         font_family="Georgia",
@@ -4004,7 +4124,7 @@ def build_timeline() -> ft.Column:
                         "Weekly log of specific contributions to the MineShield group project across all three phases.",
                         size=14,
                         color=muted,
-                        width=520,
+                        width=min(520, content_width - 24),
                         text_align=ft.TextAlign.CENTER,
                         height=1.55,
                     ),
@@ -4030,7 +4150,7 @@ def build_timeline() -> ft.Column:
 
     def week_label(text: str) -> ft.Container:
         return ft.Container(
-            width=900,
+            width=content_width,
             padding=ft.Padding(0, 26, 0, 20),
             content=ft.Row(
                 controls=[
@@ -4070,7 +4190,7 @@ def build_timeline() -> ft.Column:
         return ft.Row(
             controls=[
                 ft.Text(">", size=13, color=timeline_gold, weight=ft.FontWeight.BOLD),
-                ft.Text(text, size=12, color=muted, width=316, height=1.45),
+                ft.Text(text, size=12, color=muted, width=max(180, timeline_text_width - 22), height=1.45),
             ],
             spacing=7,
             vertical_alignment=ft.CrossAxisAlignment.START,
@@ -4096,10 +4216,10 @@ def build_timeline() -> ft.Column:
                 color=white,
                 weight=ft.FontWeight.BOLD,
                 font_family="Georgia",
-                width=338,
+                width=timeline_text_width,
                 height=1.25,
             ),
-            ft.Text(entry["body"], size=13, color=muted, width=338, height=1.55),
+            ft.Text(entry["body"], size=13, color=muted, width=timeline_text_width, height=1.55),
         ]
         if bullets:
             content_controls.append(
@@ -4119,7 +4239,7 @@ def build_timeline() -> ft.Column:
             )
 
         return ft.Container(
-            width=386,
+            width=timeline_card_width,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border_radius=12,
             bgcolor=card_bg,
@@ -4191,8 +4311,18 @@ def build_timeline() -> ft.Column:
         height = entry_height(entry)
         current_card = timeline_card(entry)
         gap = ft.Container(width=28)
-        empty = ft.Container(width=386, height=1)
+        empty = ft.Container(width=timeline_card_width, height=1)
         marker = dot_column(height + 18)
+        if linear_timeline:
+            return ft.Container(
+                width=content_width,
+                margin=ft.Margin(0, 0, 0, 20),
+                content=ft.Row(
+                    controls=[marker, ft.Container(width=12), current_card],
+                    spacing=0,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                ),
+            )
         controls = (
             [current_card, gap, marker, gap, empty]
             if entry["side"] == "left"
@@ -4200,7 +4330,7 @@ def build_timeline() -> ft.Column:
         )
 
         return ft.Container(
-            width=900,
+            width=content_width,
             margin=ft.Margin(0, 0, 0, 20),
             content=ft.Row(
                 controls=controls,
@@ -4215,11 +4345,11 @@ def build_timeline() -> ft.Column:
         timeline_controls.extend(timeline_entry(entry) for entry in week["entries"])
 
     footer = ft.Container(
-        width=900,
+        width=content_width,
         padding=ft.Padding(0, 28, 0, 42),
         content=ft.Column(
             controls=[
-                ft.Container(width=300, height=1, bgcolor=line),
+                ft.Container(width=min(300, content_width - 24), height=1, bgcolor=line),
                 ft.Text(
                     "MineShield - Group 16 - Computer Programming I",
                     size=13,
@@ -4300,7 +4430,7 @@ def main(page: ft.Page) -> None:
     header_shell = ft.Container()
 
     def build_scrollable_page(index: int) -> ft.Column:
-        scrollable_page = pages[index]()
+        scrollable_page = pages[index](page.width)
         scrollable_page.scroll = ft.ScrollMode.HIDDEN
         return scrollable_page
 
@@ -4316,7 +4446,7 @@ def main(page: ft.Page) -> None:
         header_shell.content = build_header()
         page.update()
 
-    def nav_item(label: str, icon: str, index: int) -> ft.Container:
+    def nav_item(label: str, icon: str, index: int, compact: bool = False) -> ft.Container:
         active = selected_index == index
         blog_mode = selected_index == 3
         github_mode = selected_index == 4
@@ -4325,6 +4455,9 @@ def main(page: ft.Page) -> None:
         label_color = nav_accent if active else (TEXT_SECONDARY if article_mode else TEXT_PRIMARY)
         label_size = 12 if article_mode else 14
         body = (
+            ft.Icon(icon, size=20, color=label_color)
+            if compact
+            else (
             ft.Row(
                 controls=[
                     ft.Icon(icon, size=18, color=label_color),
@@ -4340,10 +4473,14 @@ def main(page: ft.Page) -> None:
             )
             if label == "GitHub"
             else ft.Text(label, size=label_size, color=label_color, weight=ft.FontWeight.BOLD)
+            )
         )
         return ft.Container(
-            width=86,
-            height=58,
+            width=46 if compact else 86,
+            height=44 if compact else 58,
+            border_radius=8 if compact else None,
+            bgcolor=ft.Colors.with_opacity(0.10, nav_accent) if compact and active else None,
+            tooltip=label,
             on_click=lambda e, i=index: show_page(i),
             content=ft.Column(
                 controls=[
@@ -4361,6 +4498,9 @@ def main(page: ft.Page) -> None:
         )
 
     def build_header() -> ft.Container:
+        view_width = current_view_width(page.width)
+        is_mobile = view_width < MOBILE_BREAKPOINT
+        compact_nav = view_width < 1040
         blog_mode = selected_index == 3
         github_mode = selected_index == 4
         article_mode = blog_mode or github_mode
@@ -4371,7 +4511,7 @@ def main(page: ft.Page) -> None:
         if github_mode:
             logo = ft.Text(
                 "Andre Cavota",
-                size=18,
+                size=18 if not is_mobile else 17,
                 weight=ft.FontWeight.BOLD,
                 color=header_accent,
                 font_family="Georgia",
@@ -4380,8 +4520,8 @@ def main(page: ft.Page) -> None:
             logo = ft.Row(
                 controls=[
                     ft.Container(
-                        width=28,
-                        height=28,
+                        width=28 if not is_mobile else 26,
+                        height=28 if not is_mobile else 26,
                         border_radius=6,
                         alignment=ft.Alignment(0, 0),
                         bgcolor=header_accent,
@@ -4395,22 +4535,22 @@ def main(page: ft.Page) -> None:
                     ),
                     ft.Text(
                         "Andre Cavota",
-                        size=16,
+                        size=16 if not is_mobile else 15,
                         weight=ft.FontWeight.BOLD,
                         color=header_accent,
                         font_family="Georgia",
                     ),
                 ],
-                spacing=10,
+                spacing=8 if is_mobile else 10,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             )
         else:
             logo = ft.Row(
                 controls=[
                     ft.Container(
-                        width=44,
-                        height=44,
-                        border_radius=8,
+                        width=38 if is_mobile else 44,
+                        height=38 if is_mobile else 44,
+                        border_radius=7 if is_mobile else 8,
                         alignment=ft.Alignment(0, 0),
                         gradient=ft.LinearGradient(
                             begin=ft.Alignment(-1, -1),
@@ -4419,21 +4559,30 @@ def main(page: ft.Page) -> None:
                         ),
                         content=ft.Text(
                             "AC",
-                            size=22,
+                            size=19 if is_mobile else 22,
                             weight=ft.FontWeight.BOLD,
                             color=TEXT_PRIMARY,
                             font_family="Courier New",
                         ),
                     ),
-                    ft.Row(
-                        controls=[
-                            ft.Text("Andre", size=25, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
-                            ft.Text("Cavota", size=25, weight=ft.FontWeight.BOLD, color=ACCENT),
-                        ],
-                        spacing=7,
+                    (
+                        ft.Text(
+                            "Andre Cavota",
+                            size=18,
+                            weight=ft.FontWeight.BOLD,
+                            color=TEXT_PRIMARY,
+                        )
+                        if is_mobile
+                        else ft.Row(
+                            controls=[
+                                ft.Text("Andre", size=25, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
+                                ft.Text("Cavota", size=25, weight=ft.FontWeight.BOLD, color=ACCENT),
+                            ],
+                            spacing=7,
+                        )
                     ),
                 ],
-                spacing=14,
+                spacing=10 if is_mobile else 14,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             )
 
@@ -4445,34 +4594,57 @@ def main(page: ft.Page) -> None:
             else TEXT_PRIMARY
         )
 
-        contact_button = ft.FilledButton(
-            "Contact",
-            icon=ft.Icons.MAIL_OUTLINE_ROUNDED,
-            icon_color=contact_foreground,
-            width=118,
-            height=36 if blog_mode else 39,
-            color=contact_foreground,
-            bgcolor=ft.Colors.with_opacity(0.10, header_accent) if github_mode else header_accent,
-            url=CONTACT_EMAIL_URL,
-            tooltip="Email Andre Cavota",
-            style=ft.ButtonStyle(
-                padding=ft.Padding(0, 0, 0, 0),
-                side=(
-                    ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent))
-                    if github_mode
-                    else None
+        if is_mobile:
+            contact_button = ft.Container(
+                width=42,
+                height=38,
+                border_radius=8,
+                bgcolor=ft.Colors.with_opacity(0.10, header_accent) if github_mode else header_accent,
+                border=ft.Border(
+                    left=ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent)),
+                    top=ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent)),
+                    right=ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent)),
+                    bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent)),
                 ),
-                shape=ft.RoundedRectangleBorder(radius=6),
-                overlay_color=ft.Colors.with_opacity(0.14, contact_foreground),
-                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
-                mouse_cursor=ft.MouseCursor.CLICK,
-            ),
-        )
+                url=CONTACT_EMAIL_URL,
+                tooltip="Email Andre Cavota",
+                alignment=ft.Alignment(0, 0),
+                content=ft.Icon(ft.Icons.MAIL_OUTLINE_ROUNDED, color=contact_foreground, size=20),
+            )
+        else:
+            contact_button = ft.FilledButton(
+                "Contact",
+                icon=ft.Icons.MAIL_OUTLINE_ROUNDED,
+                icon_color=contact_foreground,
+                width=118,
+                height=36 if blog_mode else 39,
+                color=contact_foreground,
+                bgcolor=ft.Colors.with_opacity(0.10, header_accent) if github_mode else header_accent,
+                url=CONTACT_EMAIL_URL,
+                tooltip="Email Andre Cavota",
+                style=ft.ButtonStyle(
+                    padding=ft.Padding(0, 0, 0, 0),
+                    side=(
+                        ft.BorderSide(1, ft.Colors.with_opacity(0.45, header_accent))
+                        if github_mode
+                        else None
+                    ),
+                    shape=ft.RoundedRectangleBorder(radius=6),
+                    overlay_color=ft.Colors.with_opacity(0.14, contact_foreground),
+                    text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                ),
+            )
+
+        nav_controls = [
+            nav_item(label, icon, index, compact=compact_nav)
+            for index, (label, icon) in enumerate(zip(NAV_LABELS, NAV_ICONS))
+        ]
 
         return ft.Container(
-            height=58 if blog_mode else 74,
+            height=114 if is_mobile else (58 if blog_mode else 74),
             border_radius=6 if article_mode else 10,
-            padding=ft.Padding(18 if blog_mode else 22, 0, 20, 0),
+            padding=ft.Padding(12 if is_mobile else (18 if blog_mode else 22), 0, 12 if is_mobile else 20, 0),
             bgcolor=header_bg,
             border=ft.Border(
                 left=ft.BorderSide(1, header_border),
@@ -4480,28 +4652,52 @@ def main(page: ft.Page) -> None:
                 right=ft.BorderSide(1, header_border),
                 bottom=ft.BorderSide(1, header_border),
             ),
-            content=ft.Row(
-                controls=[
-                    logo,
-                    ft.Container(expand=True),
-                    ft.Row(
-                        controls=[
-                            nav_item(label, icon, index)
-                            for index, (label, icon) in enumerate(zip(NAV_LABELS, NAV_ICONS))
-                        ],
-                        spacing=8,
-                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                    ),
-                    contact_button,
-                ],
-                spacing=22,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            content=(
+                ft.Column(
+                    controls=[
+                        ft.Row(
+                            controls=[logo, ft.Container(expand=True), contact_button],
+                            spacing=10,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        ),
+                        ft.Row(
+                            controls=nav_controls,
+                            spacing=5,
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        ),
+                    ],
+                    spacing=8,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                )
+                if is_mobile
+                else ft.Row(
+                    controls=[
+                        logo,
+                        ft.Container(expand=True),
+                        ft.Row(
+                            controls=nav_controls,
+                            spacing=8 if not compact_nav else 4,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        ),
+                        contact_button,
+                    ],
+                    spacing=22,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                )
             ),
         )
 
     header_shell.content = build_header()
     page.appbar = None
     page.navigation_bar = None
+
+    def handle_resize(e: ft.PageResizeEvent) -> None:
+        content_area.content = build_scrollable_page(selected_index)
+        header_shell.content = build_header()
+        page.update()
+
+    page.on_resize = handle_resize
 
     page.add(
         ft.Container(
